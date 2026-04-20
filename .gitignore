@@ -13,3 +13,7 @@ memory/
 # OS noise
 .DS_Store
 Thumbs.db
+
+# Nested repo metadata backups
+byterover-cli/.git_inner_backup_openclaw/
+skills/qmd/.git_inner_backup_openclaw/

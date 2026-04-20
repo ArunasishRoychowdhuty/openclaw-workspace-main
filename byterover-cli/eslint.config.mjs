@@ -1,0 +1,48 @@
+import {includeIgnoreFile} from '@eslint/compat'
+import oclif from 'eslint-config-oclif'
+import prettier from 'eslint-config-prettier'
+import path from 'node:path'
+import {fileURLToPath} from 'node:url'
+
+const gitignorePath = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '.gitignore')
+
+export default [
+  includeIgnoreFile(gitignorePath),
+  ...oclif,
+  prettier,
+  {
+    settings: {
+      'import/resolver': {
+        typescript: {
+          alwaysTryTypes: true,
+          project: './tsconfig.json',
+        },
+      },
+    },
+  },
+  // Prevent TUI from importing server code directly
+  {
+    files: ['src/tui/**/*.ts', 'src/tui/**/*.tsx'],
+    rules: {
+      'no-restricted-imports': [
+        'error',
+        {
+          patterns: [
+            {
+              group: ['**/server/**', '../server/**', '../../server/**', '../../../server/**', '../../../../server/**'],
+              message: 'TUI should not import from server. Use transport events or feature APIs instead.',
+            },
+            {
+              group: ['**/agent/**', '../agent/**', '../../agent/**', '../../../agent/**', '../../../../agent/**'],
+              message: 'TUI should not import from agent. Use transport events or feature APIs instead.',
+            },
+            {
+              group: ['**/oclif/**', '../oclif/**', '../../oclif/**', '../../../oclif/**', '../../../../oclif/**'],
+              message: 'TUI should not import from oclif. Use transport events or feature APIs instead.',
+            },
+          ],
+        },
+      ],
+    },
+  },
+]

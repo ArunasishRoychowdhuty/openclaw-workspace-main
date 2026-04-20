@@ -1,0 +1,88 @@
+Curate knowledge topics with atomic operations. This tool manages the knowledge structure using four operation types and supports a two-part context model: Raw Concept + Narrative.
+
+**Content Structure (Two-Part Model):**
+- **tags**: Tags for categorization and filtering (e.g., ["authentication", "security", "jwt"])
+- **keywords**: Keywords for search and discovery (e.g., ["jwt", "refresh_token", "rotation"])
+- **rawConcept**: Captures essential metadata and context footprint
+  - task: What is the task or subject related to this concept
+  - changes: Array of changes or updates (code changes, process updates, decisions, etc.)
+  - files: Related resources: source files, documents, URLs, data sources, or references
+  - flow: Process flow, workflow, or sequence of steps
+  - timestamp: When created/modified (ISO 8601 format, e.g., 2025-03-18)
+- **narrative**: Captures descriptive and structural context
+  - structure: Structural or organizational documentation (e.g., file layout, process hierarchy, timeline)
+  - dependencies: Dependencies, prerequisites, blockers, or relationship information
+  - highlights: Key highlights, capabilities, deliverables, or notable outcomes
+- **facts**: Array of factual statements extracted from content
+  - statement: The full factual text (e.g., "My name is Andy", "We use PostgreSQL 15")
+  - category: Optional categorization - "personal", "project", "preference", "convention", "team", "environment", "other"
+  - subject: Optional subject key in snake_case (e.g., "user_name", "database", "sprint_duration")
+  - value: Optional extracted value (e.g., "Andy", "PostgreSQL 15", "2 weeks")
+- **snippets**: Code/text snippets (legacy support, optional)
+- **relations**: Related topics using @domain/topic notation
+
+**Per-Operation Metadata (required for all operations):**
+- **reason**: WHY this knowledge is being curated — the motivation for a human reviewer
+- **summary**: One-line semantic summary of what the knowledge file contains after this operation. Written for a human reviewer to quickly grasp the content. Example: "Caching strategy using Redis with 5-min TTL and write-through invalidation". Required for ADD/UPDATE/UPSERT/MERGE, not needed for DELETE.
+- **confidence**: "high" or "low" — your confidence in accuracy/completeness
+- **impact**: "high" or "low" — scope of change (see tool schema for details)
+
+**Operations:**
+1. **ADD** - Create new titled context file in domain/topic/subtopic
+   - Requires: path, title, content, reason, summary
+   - Example with Raw Concept + Narrative:
+     {
+       type: "ADD",
+       path: "structure/caching",
+       title: "Redis User Permissions",
+       content: {
+         tags: ["caching", "redis", "performance"],
+         keywords: ["redis", "user_permissions", "cache_ttl", "singleton"],
+         rawConcept: {
+           task: "Introduce Redis cache for getUserPermissions(userId)",
+           changes: ["Cached result using remote Redis", "Redis client: singleton"],
+           files: ["services/permission_service.go", "clients/redis_client.go"],
+           flow: "getUserPermissions -> check Redis -> on miss query DB -> store result -> return",
+           timestamp: "2025-03-18"
+         },
+         narrative: {
+           structure: "# Redis client\n- clients/redis_client.go",
+           dependencies: "# Redis client\n- Singleton, init when service starts",
+           highlights: "# Authorization\n- User permission can be stale for up to 300 seconds"
+         },
+         relations: ["@structure/database"]
+       },
+       reason: "New caching pattern",
+       summary: "Redis caching layer for getUserPermissions with 300s TTL and singleton client pattern",
+       confidence: "high",
+       impact: "low"
+     }
+   - Creates: structure/caching/redis_user_permissions.md
+
+2. **UPDATE** - Modify existing titled context file (full replacement)
+   - Requires: path, title, content, reason, summary
+   - Supports same content structure as ADD
+
+3. **MERGE** - Combine source file into target file, delete source
+   - Requires: path (source), title (source file), mergeTarget (destination path), mergeTargetTitle (destination file), reason
+   - Example: { type: "MERGE", path: "code_style/old_topic", title: "Old Guide", mergeTarget: "code_style/new_topic", mergeTargetTitle: "New Guide", reason: "Consolidating" }
+   - Raw concepts and narratives are intelligently merged
+
+4. **DELETE** - Remove specific file or entire folder
+   - Requires: path, title (optional), reason
+   - With title: deletes specific file; without title: deletes entire folder
+
+**Path format:** domain/topic or domain/topic/subtopic (uses snake_case automatically)
+**File naming:** Titles are converted to snake_case (e.g., "Best Practices" -> "best_practices.md")
+
+**Domain creation guidelines:**
+- Domains are created dynamically based on the content being curated
+- Choose domain names that represent broad knowledge categories relevant to the content
+- Domain names should be concise (1-3 words), use snake_case format
+- Consolidate related concepts under the same domain for better organization
+- Before creating a new domain, check if existing domains could accommodate the content
+- Avoid generic names like `misc`, `other`, `general`
+
+**Backward Compatibility:** Existing context entries using only snippets and relations continue to work.
+
+**Output:** Returns applied operations with status (success/failed), filePath (for created/modified files), and a summary of counts.
