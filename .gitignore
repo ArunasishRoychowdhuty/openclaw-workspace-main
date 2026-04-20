@@ -1,0 +1,15 @@
+# OpenClaw local runtime/state
+.openclaw/
+
+# Private/local notes & logs
+memory/
+*.log
+*.tmp
+
+# Environment secrets
+.env
+.env.*
+
+# OS noise
+.DS_Store
+Thumbs.db
